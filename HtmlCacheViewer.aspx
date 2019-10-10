@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#"  AutoEventWireup="true" ClassName="CacheViewer" Inherits="Sitecore.sitecore.admin.AdminPage"  %>
+<%@ Page Language="C#"  AutoEventWireup="true" ClassName="CacheViewer" Inherits="Sitecore.sitecore.admin.AdminPage"  %>
 <%@ Import Namespace="Sitecore.Web" %>
 <%@ Import Namespace="Sitecore.Caching" %>
 
@@ -6,7 +6,7 @@
 
     public class Constants
     {
-        public static readonly string Version = "v1.1";
+        public static readonly string Version = "v1.2";
         public static readonly string CacheData = "cachedata";
         public static readonly string CacheDataSortDirection = "cachedatasortdirection";
         public static readonly string SiteSelectorFieldName = "Name";
@@ -14,6 +14,7 @@
         public static readonly string ContentEditorUrl = "/sitecore/shell/Applications/Content Editor.aspx?fo=";
         public static readonly string RegExGuid = @"[{(]?[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?";
         public static readonly string OpenInEditorText = "Click to open this item in the Content Editor";
+        public static readonly int CacheEntrySummaryNumChars = 200;
     }
 
     protected void Page_Load(object sender, EventArgs e)
@@ -84,19 +85,12 @@
         return cacheData;
     }
 
-    //protected string ShortenString(string text)
-    //{
-    //	const string expandText = "</div><div class=\"reveal\">Click to expand...</div><div runat=\"server\" id=\"divCacheContentsPart2\" style=\"display:none;\">";
-    //	const string collapseText = "</div><div class=\"collapse\" style=\"display:none;\">Click to collapse...</div>";
-    //	text = "<div runat=\"server\" id=\"divCacheContentsPart1\">" + text;
-    //	text = text.Insert(200, expandText); 
-    //	return text += collapseText;
-    //}
-
     protected Tuple<string, string> ShortenString(string text)
     {
-        return new Tuple<string, string>(text.Substring(0, 200), text.Substring(200, text.Length - 200));
-
+		if(text.Length < Constants.CacheEntrySummaryNumChars) {
+			return new Tuple<string, string>(text, text);
+		}
+        return new Tuple<string, string>(text.Substring(0, Constants.CacheEntrySummaryNumChars), text.Substring(Constants.CacheEntrySummaryNumChars, text.Length - Constants.CacheEntrySummaryNumChars));
     }
 
     protected string GetContentEditorItemUrl(string site, string guid)
@@ -131,13 +125,18 @@
             HtmlGenericControl div1 = (HtmlGenericControl) e.Row.FindControl("divCacheContentsPart1");
             HtmlGenericControl div2 = (HtmlGenericControl) e.Row.FindControl("divCacheContentsPart2");
             HtmlGenericControl divExpand = (HtmlGenericControl) e.Row.FindControl("divExpandCacheContents");
-            if (div1 != null && div1.InnerHtml.Length > 1)
+            if (div1 != null && div1.InnerHtml.Length == Constants.CacheEntrySummaryNumChars)
             {
                 divExpand.Visible = true;
             }
             if (btn != null && div1 != null && div2 != null)
             {
-                btn.Attributes.Add("onclick", String.Format("copyToClipboard(['{0}','{1}']); return false;", div1.ClientID, div2.ClientID));
+				if (div1.InnerHtml.Length == Constants.CacheEntrySummaryNumChars) {
+					btn.Attributes.Add("onclick", String.Format("copyToClipboard(['{0}','{1}']); return false;", div1.ClientID, div2.ClientID));
+				}
+				else {
+					btn.Attributes.Add("onclick", String.Format("copyToClipboard(['{0}']); return false;", div1.ClientID));
+				}
             }
         }
     }
